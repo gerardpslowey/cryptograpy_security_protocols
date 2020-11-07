@@ -1,0 +1,2 @@
+This file will contain my 1024-bit shared Diffie-Hellman public value B in hexadecimal 
+(256 hex digits with no white space).

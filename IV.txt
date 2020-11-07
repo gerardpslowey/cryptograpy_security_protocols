@@ -1,0 +1,2 @@
+This file will contain my 128-bit IV in hexadecimal 
+(32 hex digits with no white space).
