@@ -1,10 +1,13 @@
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
+import java.util.Scanner;
+
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -41,46 +44,96 @@ public class Assignment1 {
         return y;
     }
 
-    public static byte[] aes256(BigInteger s) throws NoSuchAlgorithmException {
-        // Attempt to create AES key k(256 bit size) using the shared key generated
-        MessageDigest md = MessageDigest.getInstance("SHA-256");
-        byte[] hash = md.digest(s.toByteArray());
-
-        return hash;
-    }
 
     public static byte[] createIV() {
         // The IV for this encryption will be a randomly generated 128-bit value.
-        byte[] iv = new byte[16];
         SecureRandom randomNum = new SecureRandom();
+        byte[] iv = new byte[16];
         randomNum.nextBytes(iv);
 
         return iv;
     }
 
-    public static void main(String[] args) throws NoSuchAlgorithmException {
+    public static void main(String[] args)
+            throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IOException {
 
-        // File to be used as input
-        // String fileName = args[0];
+        Scanner in = new Scanner(System.in);
+        // Create a placeholder for the filename
+        String fileName = null;
+
+        // Check if file to be used as input was present
+        // on the command line
+        if (args.length == 1) {
+			fileName = args[0];
+        }
+        
+        // Give the user a second chance to enter a file name
+        else {
+			System.out.print("Please enter an input file name: ");
+			fileName = in.next();
+			in.close();
+		}
 
         // Generate a random 1023-bit integer, this will be your secret value b.
         BigInteger b = new BigInteger(1023, new SecureRandom());
-        System.out.println(b.toString(16));
+        // System.out.println(b.toString(16));
 
         // Generate your public shared value B given by g^b (mod p)
         BigInteger B = modularExp(g, b, p);
-        System.out.println(B.toString(16));
+        // System.out.println(B.toString(16));
 
         // Calculate the shared secret s given by A^b (mod p)
         BigInteger s = modularExp(A, b, p);
-        System.out.println(s.toString(16));
+        // System.out.println(s.toString(16));
 
+        // TODO: Implement this in a standalone function
+        // Use SHA-256 to produce a 256-bit digest from the shared secret s        
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        byte[] hash = md.digest(s.toByteArray());
         // Create a new key k and 
-        // Tell Java that this is an AES key using SecretKeySpec
-        SecretKey k = new SecretKeySpec(aes256(s), "AES");
+        // tell Java that this is an AES key using SecretKeySpec
+        SecretKey k = new SecretKeySpec(hash, "AES");
         
-        //create the 128-bit IV in hex
+        // Create the 128-bit IV in hex
         IvParameterSpec IV = new IvParameterSpec(createIV());
+
+
+        // Now, we need to instantiate the cipher
+        // Indicte we will be encrypting using AES in CBC mode and 
+        // that we will implement the padding scheme ourselves
+        Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
+
+        // Now initilaise the Cipher object with the secret key k
+        // in encryption mode
+        cipher.init(Cipher.ENCRYPT_MODE, k);
+
+
+        // Read in the file from the supplied fileName
+        File inputFile = new File(fileName);
+
+        // Calculate the input file length for padding
+        int inputLength = (int) inputFile.length();
+
+        // See how much padding is needed mod 16 bytes so
+        // that the block size of 128 bits is matched
+        int lengthPadding = 16 - (inputLength % 16);
+
+        // Initialise an array of bytes matching the input file length
+        // with the padding attached
+        byte[] fileAsBytes = new byte[inputLength + lengthPadding];
+
+        // Read data in bytes from the input file
+        FileInputStream fs = new FileInputStream(inputFile);
+
+        // Easiest way to read the file and parse the bytes into
+        // the byte array
+        fs.read(fileAsBytes);
+        fs.close();
+
+
+        // TODO: Padding the array after the data
+        // if the final part of the message is less than the block size, append a 1-bit and fill the rest of the block with 0-bits; 
+        // if the final part of the message is equal to the block size, then create an extra block starting with a 1-bit and fill the rest of the block with 0-bits. 
            
     }
 }
