@@ -6,34 +6,24 @@ import java.security.*;
 public class Assignment2 {
 
    private static final BigInteger e = BigInteger.valueOf(65537);
-
    private static final String modFile = "Modulus.txt";
    // The values p and q have been hardcoded as requested in lecture
    private static final String pString = "c353aae85c9ee77da50f9e523382655d9e704b049897c2d7570e399bf103a3c94a301b3759a20b81cc5c73e34b77b39d9593f80bd3c245bcfee0b21136ca790b";
    private static final String qString = "b851d8bd3c12ad7819e042472da768bf723c0a50cee6af37d4d361bb993dd1a127ada7add03b951742ced594fb0373c623f1d62d85b5971e3c2ef6951325171f";
-   private static final String phiString = "8ca295af10e69ca7a9888b2cdb0d416c9d257ef9aabf3d794809deb37334aee8ce8b360f4e9f50ca8827f4420c9f82581918cb2441199b44fde7a28ff661b04fde3de531f7d62e825e100e2e810628b1c80895b1232e4f352683a674900278119a0ab0bca9e14e1ea017d704ec5bc7e8c20567d44b483b549dd66b01d90c152c";
 
    public static void main(String[] args) throws Exception {
 
       // Get the file name from the command line
       File input_file = getFile(args);
 
-      /* 
-      These functions were used before numbers were hardcoded
+      // Generate two distinct 512-bit probable primes p and q as well as phi(n)
       BigInteger[] values = generateValues();
       BigInteger p = values[0];
       BigInteger q = values[1];   
       BigInteger phiOfn = values[2];
-      */
-
-      // Generate two distinct 512-bit probable primes p and q
-      BigInteger p = new BigInteger(pString, 16);
-      BigInteger q = new BigInteger(qString, 16);
 
       // Calculate the product of these two primes n = pq
       BigInteger n = p.multiply(q); 
-      // Calculate the Euler totient function phi(n)
-      BigInteger phiOfn = new BigInteger(phiString, 16);
 
       // Compute the value for the decryption exponent d
       // Which is the multiplicative inverse of e (mod phi(n))
@@ -45,7 +35,7 @@ public class Assignment2 {
       // Produce a 256-bit digest of the class file using SHA-256
       byte[] hashedInput = hashFile(inputByteArray);
 
-      // Remove negative numbers
+      // Change to BigInt
       BigInteger messageDigest = new BigInteger(1, hashedInput);
 
       // Sign the digest using CRT - h(m)^d (mod n)
@@ -81,9 +71,13 @@ public class Assignment2 {
       int bitLength = 512;
       SecureRandom secureRandomNumber = new SecureRandom();
 
+      // These functions were used before numbers were hardcoded
       // Generate two distinct 512-bit probable primes p and q
-      BigInteger p = generateProbablePrime(bitLength, secureRandomNumber);
-      BigInteger q = generateProbablePrime(bitLength, secureRandomNumber);
+      // BigInteger p = generateProbablePrime(bitLength, secureRandomNumber);
+      // BigInteger q = generateProbablePrime(bitLength, secureRandomNumber);
+
+      BigInteger p = new BigInteger(pString, 16);
+      BigInteger q = new BigInteger(qString, 16);
 
       // p and q need to be different
       if (p.compareTo(q) == 0) { 
@@ -93,7 +87,7 @@ public class Assignment2 {
       // Calculate the product of these two primes n = pq
       BigInteger n = p.multiply(q); 
 
-      // Calculate phi(n)
+      // Calculate the Euler totient phi(n)
       BigInteger phiOfn = phi(p, q);
 
       // Check that e is relatively prime to phiOfN, recalculate p and q if not
@@ -104,7 +98,9 @@ public class Assignment2 {
       // Store n in modFile
       writeToFile(modFile, n.toString(16));
 
-      return new BigInteger[] {p, q, phiOfn };
+      return new BigInteger[] {
+         p, q, phiOfn
+      };
    }
 
 
@@ -151,49 +147,49 @@ public class Assignment2 {
    // Extended euclidean Algorithm
    // xGCD takes a and b as input and outputs x,y,rk
    public static BigInteger [] xGCD (BigInteger a, BigInteger b) {      
-      BigInteger[] ans = new BigInteger[3];
+      BigInteger[] arr = new BigInteger[3];
       
       // Checking if b equals zero
       // Return default values
       if (b.equals(BigInteger.ZERO)) {
-         ans[0] = a;
-         ans[1] = BigInteger.ONE;
-         ans[2] = BigInteger.ZERO;
+         arr[0] = a;
+         arr[1] = BigInteger.ONE;
+         arr[2] = BigInteger.ZERO;
          
-      return ans;
+      return arr;
       }
 
       // Recursively calculate the xGCD Value
-      ans = xGCD(b, a.mod(b));
-      BigInteger xa = ans[1];
-      BigInteger yn = ans[2];
+      arr = xGCD(b, a.mod(b));
+      BigInteger xa = arr[1];
+      BigInteger yn = arr[2];
 
-      ans[1] = yn;
+      arr[1] = yn;
       // Divide
       BigInteger tmp = a.divide(b);
       // Multiply
       tmp = yn.multiply(tmp);
       // Subtract 
-      ans[2] = xa.subtract(tmp);
+      arr[2] = xa.subtract(tmp);
 
-      return ans;
+      return arr;
    }
 
 
    // Calculate multiplicative inverse of a mod n 
    public static BigInteger mulInverse(BigInteger a, BigInteger N){
       // Use our extended euclidean GCD algorithm to help
-      BigInteger[] answer = xGCD(a,N);
+      BigInteger[] arr = xGCD(a, N);
    
-      // xGCD value is stored at answer[1]
+      // xGCD value is stored at arr[1]
       // If the xGCD value is not zero return it
-      if (!(answer[1].equals(BigInteger.ZERO))) {
-         return answer[1];
+      if (!(arr[1].equals(BigInteger.ZERO))) {
+         return arr[1];
       }
 
       // Else, add N and return
       else {
-         return answer[1].add(N);
+         return arr[1].add(N);
       }
    }
 
@@ -221,7 +217,7 @@ public class Assignment2 {
    // Chinese Remainder Theorem Implementation
    // Makes use of my multiplicative inverse function
    private static BigInteger crt(BigInteger c, BigInteger p, BigInteger d, BigInteger n, BigInteger q){
-      BigInteger a1 = modularExp(c.mod(p), d, p);
+      BigInteger a1 = modularExp(c.mod(p), d, p);        // Get ai using modular exponentiation
       BigInteger N1 = n.divide(p);                       // Ni = n/ni
       BigInteger y1 = mulInverse(N1, p);                 // yi = Ni^-1 (mod ni)
 
